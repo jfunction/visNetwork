@@ -2055,8 +2055,66 @@ if (HTMLWidgets.shinyMode){
         }
       }
   });
+
+  // replace graph
+  Shiny.addCustomMessageHandler('visShinyReplaceGraph', function(data){
+    // combined logic from the visShinyRemove and visShinyUpdate methods for Nodes/Edges
+    // this method assumes the legend is not used
+    // get container id
+    var el = document.getElementById("graph"+data.id);
+    var main_el = document.getElementById(data.id);
+    if(el){
+      let currentEdgeIds = el.edges.getIds();
+      let currentNodeIds = el.nodes.getIds();
+      var tmpnodes = visNetworkdataframeToD3(data.nodes, "nodes");
+      var tmpedges = visNetworkdataframeToD3(data.edges, "edges");
+      // reset some parameters / date before
+      if (main_el.selectActive === true | main_el.highlightActive === true) {
+        //reset nodes and edges
+        resetAllEdges(el.edges, el.highlightColor,  el.byselectionColor, el.chart)
+        resetAllNodes(el.nodes, true, el.options, el.chart, false);
+        
+        if (main_el.selectActive === true){
+          main_el.selectActive = false;
+          resetList('selectedBy', data.id, 'selectedBy');
+        }
+        if (main_el.highlightActive === true){
+          main_el.highlightActive = false;
+          resetList('nodeSelect', data.id, 'selected');
+        }
+      }
+      // replace graph
+      el.edges.remove(currentEdgeIds);
+      el.nodes.remove(currentNodeIds);
+      el.nodes.update(tmpnodes);
+      el.edges.update(tmpedges);
+
+      // update options ?
+      if(data.updateOptions){
+        var dataOptions = {};
+        dataOptions.options = {};
+      
+        var updateOpts = false;
+        if(document.getElementById("nodeSelect"+data.id).style.display === 'inline'){
+          updateOpts = true;
+          dataOptions.id  = data.id;
+          dataOptions.options.idselection = {enabled : true, useLabels : main_el.idselection_useLabels};
+        }
   
-  // remove edges
+        if(document.getElementById("selectedBy"+data.id).style.display === 'inline'){
+          updateOpts = true;
+          dataOptions.id  = data.id;
+          dataOptions.options.byselection = {enabled : true, variable : main_el.byselection_variable, multiple : main_el.byselection_multiple};
+        }
+      
+        if(updateOpts){
+          updateVisOptions(dataOptions);
+        }
+      }
+    }
+  })
+  
+  // set title
   Shiny.addCustomMessageHandler('visShinySetTitle', function(data){
     if(data.main !== null){
       var div_title = document.getElementById("title" + data.id);
